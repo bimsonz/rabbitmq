@@ -64,6 +64,8 @@ before_script:
 
   # install Drush and PHP-AMQPlib in the project
   - composer require -v "drush/drush:^8" "php-amqplib/php-amqplib:^2.6"
+  # Fix php unit for php 7.x
+  - composer run-script drupal-phpunit-upgrade
 
   # create new site, stubbing sendmail path with true to prevent delivery errors and manually resolving drush path
   - mysql -e 'create database travis_ci_rabbitmq'
