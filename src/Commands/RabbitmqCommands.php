@@ -13,100 +13,113 @@ use Drupal\rabbitmq\Exception\Exception as RabbitMqException;
 use Drupal\rabbitmq\Consumer;
 
 /**
- * Class RabbitmqCommands
+ * Class RabbitmqCommands.
  */
 class RabbitmqCommands extends DrushCommands {
 
   /**
-     * The consumer.
-     *
-     * @var \Drupal\rabbitmq\Consumer
-     */
+   * The consumer.
+   *
+   * @var \Drupal\rabbitmq\Consumer
+   */
   protected $consumer;
 
   /**
-     * The connection factory.
-     *
-     * @var \Drupal\rabbitmq\ConnectionFactory
-     */
+   * The connection factory.
+   *
+   * @var \Drupal\rabbitmq\ConnectionFactory
+   */
   protected $connection;
 
   /**
    * RabbitmqCommands constructor.
    *
    * @param \Drupal\rabbitmq\Consumer $consumer
-   * @param ConnectionFactory $connectionFactory
+   *   Consumer service.
+   * @param \Drupal\rabbitmq\ConnectionFactory $connectionFactory
+   *   RabbitMQ Connection factory.
    */
   public function __construct(Consumer $consumer, ConnectionFactory $connectionFactory) {
-        parent::__construct();
-        $this->consumer = $consumer;
-        $this->connection = $connectionFactory;
-      }
+    parent::__construct();
+    $this->consumer = $consumer;
+    $this->connection = $connectionFactory;
+  }
 
   /**
-     * Remove all files unused.
-     *
-     * @param string $queueName
-     *   The name of the queue to process, also the name of the queue worker plugin.
-     *
-     * @command rabbitmq:worker
-     *
-     * @option memory_limit Set the max amount of memory the worker may use before exiting. Given in megabytes.
-     * @option max_iterations Number of iterations to process before exiting. If not present, exit criteria will not evaluate the amount of iterations processed.
-     * @option rabbitmq_timeout Number of seconds before the script ends up when waiting on RabbitMQ. Requires the PCNTL extension.
-     *
-     * @usage drush rqwk
-     *   To delete unused files in directory files
-     * @aliases rqwk,rabbitmq-worker
-     * @validate-queue queueName
-     */
-  public function rabbitmqWorker($queueName, $option = ['rabbitmq_timeout' => self::REQ, 'memory_limit' => self::REQ, 'max_iterations' => self::REQ]) {
+   * Remove all files unused.
+   *
+   * @param string $queueName
+   *   The name of the queue to process and the queue worker plugin.
+   * @param array $option
+   *   Consumer service options.
+   *
+   * @return bool
+   *
+   * @throws \Exception
+   *
+   * @command rabbitmq:worker
+   *
+   * @option memory_limit Set the max amount of memory the worker may use before exiting. Given in megabytes.
+   * @option max_iterations Number of iterations to process before exiting. If not present, exit criteria will not evaluate the amount of iterations processed.
+   * @option rabbitmq_timeout Number of seconds before the script ends up when waiting on RabbitMQ. Requires the PCNTL extension.
+   *
+   * @usage drush rqwk
+   *   To delete unused files in directory files
+   * @aliases rqwk,rabbitmq-worker
+   * @validate-queue queueName
+   */
+  public function rabbitmqWorker(
+    $queueName,
+    array $option = [
+      'rabbitmq_timeout' => self::REQ,
+      'memory_limit' => self::REQ,
+      'max_iterations' => self::REQ,
+    ]
+  ) {
 
-        // Service might be called from a non-Drush environment, so drush_get_option()
-        // may not be available to it.
-        $this->consumer->setOptionGetter(function (string $name) {
-            return (int) drush_get_option($name, Consumer::OPTIONS[$name]);
+    // Service might be called from a non-Drush environment
+    // so drush_get_option() may not be available to it.
+    $this->consumer->setOptionGetter(function (string $name) {
+      return (int) drush_get_option($name, Consumer::OPTIONS[$name]);
     });
 
-        $queueArgs = ['@name' => $queueName];
+    $queueArgs = ['@name' => $queueName];
 
-        $consumer = $this->consumer;
-        drupal_register_shutdown_function(function () use ($consumer, $queueName) {
-            $consumer->shutdownQueue($queueName);
-          });
-
-        try {
-            $consumer->logStart();
-            $consumer->consumeQueueAPI($queueName);
-          }
+    $consumer = $this->consumer;
+    drupal_register_shutdown_function(function () use ($consumer, $queueName) {
+      $consumer->shutdownQueue($queueName);
+    });
+    try {
+      $consumer->logStart();
+      $consumer->consumeQueueApi($queueName);
+    }
     catch (InvalidWorkerException $e) {
-            return drush_set_error(dt("Worker for queue @name does not implement the worker interface.", $queueArgs));
+      return drush_set_error(dt("Worker for queue @name does not implement the worker interface.", $queueArgs));
     }
     catch (RabbitMqInvalidArgumentException $e) {
-            return drush_set_error($e->getMessage());
+      return drush_set_error($e->getMessage());
     }
     catch (RabbitMqException $e) {
-            return drush_set_error(dt("Could not obtain channel for queue.", $queueArgs));
+      return drush_set_error(dt("Could not obtain channel for queue.", $queueArgs));
     }
 
     return TRUE;
   }
 
   /**
-     * Remove all files unused.
-     *
-     * @param string $queueName
-     *   The name of the queue to process, also the name of the queue worker plugin.
-     *
-     * @command rabbitmq:queue-info
-     * @usage drush rqqi
-     *   To delete unused files in directory files
-     * @aliases rqqi,rabbitmq-queue-info
-     */
+   * Remove all files unused.
+   *
+   * @param string $queueName
+   *   The name of the queue to process and the queue worker plugin.
+   *
+   * @command rabbitmq:queue-info
+   * @usage drush rqqi
+   *   To delete unused files in directory files
+   * @aliases rqqi,rabbitmq-queue-info
+   */
   public function rabbitmqQueueInfo($queueName = NULL) {
-
-        if (empty($queueName)) {
-            return;
+    if (empty($queueName)) {
+      return;
     }
 
     /* @var \Drupal\Core\Queue\QueueFactory $queueFactory */
@@ -118,20 +131,21 @@ class RabbitmqCommands extends DrushCommands {
   }
 
   /**
-     * Remove all files unused.
-     *
-     * @command rabbitmq:test-producer
-     * @usage drush rqtp
-     *   To delete unused files in directory files
-     * @aliases rqtp,rabbitmq-test-producer
-     */
+   * Remove all files unused.
+   *
+   * @command rabbitmq:test-producer
+   * @usage drush rqtp
+   *   To delete unused files in directory files
+   * @aliases rqtp,rabbitmq-test-producer
+   */
   public function rabbitmqTestProducer() {
-        $connection = new AMQPStreamConnection(
-              $this->connection::DEFAULT_HOST,
-              $this->connection::DEFAULT_PORT,
-              $this->connection::DEFAULT_USER,
+    $connection = new AMQPStreamConnection(
+      $this->connection::DEFAULT_HOST,
+      $this->connection::DEFAULT_PORT,
+      $this->connection::DEFAULT_USER,
       $this->connection::DEFAULT_PASS
-          );
+    );
+
     $channel = $connection->channel();
     $routingKey = $queueName = 'hello';
     $channel->queue_declare($queueName, FALSE, FALSE, FALSE, FALSE);
