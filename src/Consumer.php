@@ -3,6 +3,7 @@
 namespace Drupal\rabbitmq;
 
 use Drupal\Core\Logger\LoggerChannelInterface;
+use Drupal\Core\Messenger\MessengerTrait;
 use Drupal\Core\Queue\QueueFactory;
 use Drupal\Core\Queue\QueueWorkerInterface;
 use Drupal\Core\Queue\QueueWorkerManagerInterface;
@@ -28,6 +29,7 @@ use PhpAmqpLib\Message\AMQPMessage;
  * to support multiple ways of accessing options, e.g. Drush vs Console vs Web.
  */
 class Consumer {
+  use MessengerTrait;
   use StringTranslationTrait;
 
   const EXTENSION_PCNTL = 'pcntl';
@@ -193,7 +195,7 @@ class Consumer {
    * to shutdown the queue.
    */
   public function onTimeout() {
-    drupal_set_message($this->t('Timeout reached'));
+    $this->messenger->addMessage($this->t('Timeout reached'));
     $this->logger->info('Timeout reached');
     $this->stopListening();
   }

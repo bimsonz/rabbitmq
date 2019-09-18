@@ -4,11 +4,13 @@ namespace Drupal\rabbitmq_example\Form;
 
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Messenger\MessengerTrait;
 
 /**
  * Contribute form.
  */
 class ExampleForm extends FormBase {
+  use MessengerTrait;
 
   /**
    * {@inheritdoc}
@@ -52,7 +54,7 @@ class ExampleForm extends FormBase {
     $queue->createItem($data);
 
     // Send some feedback.
-    drupal_set_message(
+    $this->messenger->addMessage(
       $this->t('You sent the following data to queue @queue: @email', [
         '@queue' => $queue_name,
         '@email' => $form_state->getValue('email'),
