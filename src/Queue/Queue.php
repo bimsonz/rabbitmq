@@ -47,7 +47,7 @@ class Queue extends QueueBase implements ReliableQueueInterface {
       }
 
       $channel->basic_publish($item, $exchange, $routing_key);
-      $this->logger->info('Item sent to queue %queue', $logger_args);
+      $this->logger->debug('Item sent to queue %queue', $logger_args);
       $result = TRUE;
     }
     catch (\Exception $e) {

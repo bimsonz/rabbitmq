@@ -2,183 +2,158 @@
 
 namespace Drupal\rabbitmq\Commands;
 
+use Consolidation\OutputFormatters\StructuredData\PropertyList;
 use Drupal\rabbitmq\ConnectionFactory;
+use Drupal\rabbitmq\Consumer;
+use Drupal\rabbitmq\Service\QueueInfo;
+use Drush\Commands\DrushCommands;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Message\AMQPMessage;
-use Symfony\Component\Yaml\Yaml;
-use Drush\Commands\DrushCommands;
-use Drupal\rabbitmq\Exception\InvalidWorkerException;
-use Drupal\rabbitmq\Exception\InvalidArgumentException as RabbitMqInvalidArgumentException;
-use Drupal\rabbitmq\Exception\Exception as RabbitMqException;
-use Drupal\rabbitmq\Consumer;
 
 /**
- * Class RabbitmqCommands.
+ * Implementation of the Drush commands for RabbitMQ.
  */
 class RabbitmqCommands extends DrushCommands {
 
+  const WORKER_DEFAULTS = [
+    Consumer::OPTION_MEMORY_LIMIT => NULL,
+    Consumer::OPTION_MAX_ITERATIONS => NULL,
+    Consumer::OPTION_TIMEOUT => NULL,
+  ];
+
   /**
-   * The consumer.
+   * The rabbitmq.queue_info service.
+   *
+   * @var \Drupal\rabbitmq\Service\QueueInfo
+   */
+  protected $queueInfo;
+
+  /**
+   * The rabbitmq.consumer service.
    *
    * @var \Drupal\rabbitmq\Consumer
    */
   protected $consumer;
 
   /**
-   * The connection factory.
-   *
-   * @var \Drupal\rabbitmq\ConnectionFactory
-   */
-  protected $connection;
-
-  /**
    * RabbitmqCommands constructor.
    *
+   * @param \Drupal\rabbitmq\Service\QueueInfo $queueInfo
+   *   The rabbitmq.queue_info service.
    * @param \Drupal\rabbitmq\Consumer $consumer
-   *   Consumer service.
-   * @param \Drupal\rabbitmq\ConnectionFactory $connectionFactory
-   *   RabbitMQ Connection factory.
+   *   The rabbitmq.consumer service.
    */
-  public function __construct(Consumer $consumer, ConnectionFactory $connectionFactory) {
-    parent::__construct();
+  public function __construct(
+    QueueInfo $queueInfo,
+    Consumer $consumer
+  ) {
+    $this->queueInfo = $queueInfo;
     $this->consumer = $consumer;
-    $this->connection = $connectionFactory;
   }
 
   /**
-   * Remove all files unused.
+   * Connect to RabbitMQ and wait for jobs to do.
    *
    * @param string $queueName
-   *   The name of the queue to process and the queue worker plugin.
-   * @param array $option
-   *   Consumer service options.
+   *   The name of the queue to process, also the name of the worker plugin.
+   * @param mixed $options
+   *   The command options.
    *
-   * @return bool
-   *
-   * @throws \Exception
+   * @return int
+   *   Exit code.
    *
    * @command rabbitmq:worker
-   *
-   * @option memory_limit Set the max amount of memory the worker may use before exiting. Given in megabytes.
-   * @option max_iterations Number of iterations to process before exiting. If not present, exit criteria will not evaluate the amount of iterations processed.
-   * @option rabbitmq_timeout Number of seconds before the script ends up when waiting on RabbitMQ. Requires the PCNTL extension.
-   *
-   * @usage drush rqwk
-   *   To delete unused files in directory files
-   * @aliases rqwk,rabbitmq-worker
-   * @validate-queue queueName
+   * @option Consumer::OPTION_MEMORY_LIMIT
+   *   Set the max amount of memory the worker should occupy before exiting.
+   *   Given in megabytes.
+   * @option Consumer::OPTION_MAX_ITERATIONS
+   *   Number of iterations to process before exiting.If not present, exit
+   *   criteria will not evaluate the amount of iterations processed.
+   * @option Consumer::OPTION_TIMEOUT
+   *   Timeout to limit time worker should keep waiting messages from RabbitMQ.
+   * @aliases rqwk
    */
-  public function rabbitmqWorker(
-    $queueName,
-    array $option = [
-      'rabbitmq_timeout' => self::REQ,
-      'memory_limit' => self::REQ,
-      'max_iterations' => self::REQ,
-    ]
-  ) {
-
-    // Service might be called from a non-Drush environment
-    // so drush_get_option() may not be available to it.
-    $this->consumer->setOptionGetter(function (string $name) {
-      return (int) drush_get_option($name, Consumer::OPTIONS[$name]);
+  public function worker($queueName, $options = self::WORKER_DEFAULTS) {
+    $this->consumer->setOptionGetter(function (string $name) use ($options) {
+      return (int) $options[$name];
     });
 
-    $queueArgs = ['@name' => $queueName];
-
-    $consumer = $this->consumer;
-    drupal_register_shutdown_function(function () use ($consumer, $queueName) {
-      $consumer->shutdownQueue($queueName);
+    drupal_register_shutdown_function(function () use ($queueName) {
+      $this->consumer->shutdownQueue($queueName);
     });
-    try {
-      $consumer->logStart();
-      $consumer->consumeQueueApi($queueName);
-    }
-    catch (InvalidWorkerException $e) {
-      return drush_set_error(dt("Worker for queue @name does not implement the worker interface.", $queueArgs));
-    }
-    catch (RabbitMqInvalidArgumentException $e) {
-      return drush_set_error($e->getMessage());
-    }
-    catch (RabbitMqException $e) {
-      return drush_set_error(dt("Could not obtain channel for queue.", $queueArgs));
-    }
 
-    return TRUE;
+    $this->consumer->logStart();
+    $this->consumer->consumeQueueApi($queueName);
   }
 
   /**
-   * Remove all files unused.
+   * Return information about a queue.
    *
    * @param string $queueName
-   *   The name of the queue to process and the queue worker plugin.
+   *   The name of the queue to get information from.
+   *
+   * @return \Consolidation\OutputFormatters\StructuredData\PropertyList|null
+   *   The command result.
    *
    * @command rabbitmq:queue-info
-   * @usage drush rqqi
-   *   To delete unused files in directory files
-   * @aliases rqqi,rabbitmq-queue-info
+   * @aliases rqqi
+   * @field-labels
+   *   queue-name: Queue name
+   *   count: Items count
    */
-  public function rabbitmqQueueInfo($queueName = NULL) {
-    if (empty($queueName)) {
-      return;
-    }
+  public function queueInfo($queueName = NULL) {
+    $count = $this->queueInfo->count($queueName);
 
-    /* @var \Drupal\Core\Queue\QueueFactory $queueFactory */
-    $queueFactory = (new \Drupal())->service('queue');
-
-    $queue = $queueFactory->get($queueName);
-    $count = $queue->numberOfItems();
-    echo (new Yaml())->dump([$queueName => $count]);
+    return new PropertyList(['queue-name' => $queueName, 'count' => $count]);
   }
 
   /**
-   * Remove all files unused.
+   * Run the RabbitMQ tutorial test producer.
+   *
+   * @see https://www.rabbitmq.com/tutorials/tutorial-one-php.html
    *
    * @command rabbitmq:test-producer
-   * @usage drush rqtp
-   *   To delete unused files in directory files
-   * @aliases rqtp,rabbitmq-test-producer
+   * @aliases rqtp
    */
-  public function rabbitmqTestProducer() {
+  public function testProducer() {
     $connection = new AMQPStreamConnection(
-      $this->connection::DEFAULT_HOST,
-      $this->connection::DEFAULT_PORT,
-      $this->connection::DEFAULT_USER,
-      $this->connection::DEFAULT_PASS
+      ConnectionFactory::DEFAULT_HOST,
+      ConnectionFactory::DEFAULT_PORT,
+      ConnectionFactory::DEFAULT_USER,
+      ConnectionFactory::DEFAULT_PASS
     );
-
     $channel = $connection->channel();
     $routingKey = $queueName = 'hello';
     $channel->queue_declare($queueName, FALSE, FALSE, FALSE, FALSE);
     $message = new AMQPMessage('Hello World!');
     $channel->basic_publish($message, '', $routingKey);
-    echo " [x] Sent 'Hello World!'\n";
+    $this->writeln(" [x] Sent 'Hello World!'");
     $channel->close();
     $connection->close();
   }
 
   /**
-   * Remove all files unused.
+   * Run the RabbitMQ tutorial test consumer.
    *
-   * @command rabbitmq:test-consummer
-   * @usage drush rqtc
-   *   To delete unused files in directory files
-   * @aliases rqtc,rabbitmq-test-consummer
+   * @see https://www.rabbitmq.com/tutorials/tutorial-one-php.html
+   *
+   * @command rabbitmq:test-consumer
+   * @aliases rqtc
    */
-  public function rabbitmqTestConsummer() {
+  public function testConsumer() {
     $connection = new AMQPStreamConnection(
-      $this->connection::DEFAULT_HOST,
-      $this->connection::DEFAULT_PORT,
-      $this->connection::DEFAULT_USER,
-      $this->connection::DEFAULT_PASS
+      ConnectionFactory::DEFAULT_HOST,
+      ConnectionFactory::DEFAULT_PORT,
+      ConnectionFactory::DEFAULT_USER,
+      ConnectionFactory::DEFAULT_PASS
     );
-
     $channel = $connection->channel();
     $queueName = 'hello';
     $channel->queue_declare($queueName, FALSE, FALSE, FALSE, FALSE);
-    echo ' [*] Waiting for messages. To exit press CTRL+C', "\n";
+    $this->writeln(' [*] Waiting for messages. To exit press CTRL+C');
 
     $callback = function ($msg) {
-      echo " [x] Received ", $msg->body, "\n";
+      $this->writeln(" [x] Received {$msg->body}");
     };
 
     $channel->basic_consume($queueName, '', FALSE, TRUE, FALSE, FALSE, $callback);
