@@ -1,8 +1,8 @@
 services:
   rabbitmq.commands:
-    class: 'Drupal\rabbitmq\Commands\RabbitmqCommands'
+    class: \Drupal\rabbitmq\Commands\RabbitmqCommands
     arguments:
+      - '@rabbitmq.queue_info'
       - '@rabbitmq.consumer'
-      - '@rabbitmq.connection.factory'
     tags:
       - { name: drush.command }

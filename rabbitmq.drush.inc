@@ -29,6 +29,18 @@ function rabbitmq_drush_command() {
 }
 
 /**
+ * Command callback for rabbitmq-queue-info.
+ *
+ * @param string $queueName
+ */
+function drush_rabbitmq_queue_info($queueName = NULL) {
+  /** @var \Drupal\rabbitmq\Service\QueueInfo $info */
+  $info = \Drupal::service('rabbitmq.queue_info');
+  $count = $info->count($queueName);
+  echo (new Yaml())->dump([$queueName => $count]);
+}
+
+/**
  * Command callback for rabbitmq-test-producer.
  */
 function drush_rabbitmq_test_producer() {
@@ -74,18 +86,6 @@ function drush_rabbitmq_test_consumer() {
   }
   $channel->close();
   $connection->close();
-}
-
-/**
- * Command callback for rabbitmq-queue-info.
- *
- * @param string $queueName
- */
-function drush_rabbitmq_queue_info($queueName = NULL) {
-  /** @var \Drupal\rabbitmq\Service\QueueInfo $info */
-  $info = \Drupal::service('rabbitmq.queue_info');
-  $count = $info->count($queueName);
-  echo (new Yaml())->dump([$queueName => $count]);
 }
 
 /**

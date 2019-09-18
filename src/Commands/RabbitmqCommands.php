@@ -102,6 +102,10 @@ class RabbitmqCommands extends DrushCommands {
    *   count: Items count
    */
   public function queueInfo($queueName = NULL) {
+    if (NULL == $queueName) {
+      $this->yell('Queue name required.', null, 'red');
+      return NULL;
+    }
     $count = $this->queueInfo->count($queueName);
 
     return new PropertyList(['queue-name' => $queueName, 'count' => $count]);
