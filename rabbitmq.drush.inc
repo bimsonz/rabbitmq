@@ -82,9 +82,9 @@ function drush_rabbitmq_test_consumer() {
  * @param string $queueName
  */
 function drush_rabbitmq_queue_info($queueName = NULL) {
-  /** @var \Drupal\rabbitmq\Commands\QueueInfo $info */
+  /** @var \Drupal\rabbitmq\Service\QueueInfo $info */
   $info = \Drupal::service('rabbitmq.queue_info');
-  $count = $info->get($queueName);
+  $count = $info->count($queueName);
   echo (new Yaml())->dump([$queueName => $count]);
 }
 
