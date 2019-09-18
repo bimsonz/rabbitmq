@@ -63,7 +63,7 @@ before_script:
   - mv ../$TRAVIS_REPO_SLUG modules/contrib
 
   # install Drush and PHP-AMQPlib in the project
-  - composer require -v "drush/drush" "php-amqplib/php-amqplib:^2.6"
+  - composer require -v "drush/drush:8^" "php-amqplib/php-amqplib:^2.6"
 
   # create new site, stubbing sendmail path with true to prevent delivery errors and manually resolving drush path
   - mysql -e 'create database travis_ci_rabbitmq'
