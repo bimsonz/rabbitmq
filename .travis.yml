@@ -53,7 +53,8 @@ before_script:
 
   # Define RabbitMQ settings
   - tail --lines=+9 modules/contrib/rabbitmq/example.settings.local.php >> sites/default/settings.php
-
+  # Switch back to Drush 9 to enable the module (new core_version_requirement: key not supported in Drush 8)
+  - composer require drush/drush
   # Check Drupal install
   - vendor/bin/drush status
   # enable RabbitMQ module in build site.
@@ -64,7 +65,7 @@ before_script:
   # - drush runserver 127.0.0.1:8080 &
   #- until netstat -an 2>/dev/null | grep '8080.*LISTEN'; do true; done
 
-script: SIMPLETEST_DB=mysql://root:@127.0.0.1/travis_ci_rabbitmq vendor/bin/phpunit --coverage-clover modules/contrib/rabbitmq/coverage.clover -c modules/contrib/rabbitmq/travis.phpunit.xml modules/contrib/rabbitmq
+script: SIMPLETEST_DB=mysql://root:@127.0.0.1/travis_ci_rabbitmq vendor/bin/phpunit --coverage-clover modules/contrib/rabbitmq/coverage.clover --configuration core modules/contrib/rabbitmq
 
 after_script:
   - cd modules/contrib/rabbitmq
