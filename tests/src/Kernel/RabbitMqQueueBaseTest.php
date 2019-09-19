@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\rabbitmq\Tests;
+namespace Drupal\Tests\rabbitmq\Kernel;
 
 use Drupal\rabbitmq\Queue\Queue;
 
@@ -9,7 +9,7 @@ use Drupal\rabbitmq\Queue\Queue;
  *
  * @group RabbitMQ
  */
-class RabbitMqQueueTest extends RabbitMqTestBase {
+class RabbitMqQueueBaseTest extends RabbitMqBaseTest {
 
   /**
    * The default queue, handled by RabbitMq.
