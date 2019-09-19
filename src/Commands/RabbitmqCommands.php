@@ -103,7 +103,7 @@ class RabbitmqCommands extends DrushCommands {
    */
   public function queueInfo($queueName = NULL) {
     if (NULL == $queueName) {
-      $this->yell('Queue name required.', null, 'red');
+      $this->yell('Queue name required.', NULL, 'red');
       return NULL;
     }
     $count = $this->queueInfo->count($queueName);

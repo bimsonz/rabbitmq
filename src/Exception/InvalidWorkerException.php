@@ -16,7 +16,7 @@ class InvalidWorkerException extends \Exception {
    *   The message.
    * @param int $code
    *   The code.
-   * @param \Throwable|NULL $previous
+   * @param \Throwable|null $previous
    *   The previous exception to use in stack trace.
    */
   public function __construct(

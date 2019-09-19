@@ -15,6 +15,11 @@ use PhpAmqpLib\Connection\AMQPStreamConnection;
 abstract class RabbitMqBaseTest extends KernelTestBase {
   const MODULE = 'rabbitmq';
 
+  /**
+   * Modules to consider.
+   *
+   * @var array
+   */
   public static $modules = ['system', QueueBase::MODULE];
 
   /**
@@ -95,6 +100,8 @@ abstract class RabbitMqBaseTest extends KernelTestBase {
    * Initialize a server and free channel.
    *
    * @param string $name
+   *   Queue name.
+   *
    * @return array[]
    *   - \AMQPChannel: A channel to the default queue.
    *   - string: the queue name.
@@ -117,4 +124,5 @@ abstract class RabbitMqBaseTest extends KernelTestBase {
 
     return [$channel, $actualName];
   }
+
 }

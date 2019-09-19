@@ -77,9 +77,6 @@ checks:
         uppercase_constants: true
         use_self_instead_of_fqcn: true
 
-filter:
-    excluded_paths:
-      - src/Tests
 coding_style:
     php:
         indentation:

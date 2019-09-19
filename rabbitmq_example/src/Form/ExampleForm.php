@@ -9,6 +9,7 @@ use Drupal\Core\Form\FormStateInterface;
  * Contribute form.
  */
 class ExampleForm extends FormBase {
+
   /**
    * {@inheritdoc}
    */

@@ -16,7 +16,7 @@ class RabbitMqConnectionTest extends RabbitMqQueueBaseTest {
    */
   public function testCreateItemOnUnManagedQueue() {
     /* @var \PhpAmqplib\Channel\AMQPChannel $channel */
-    list($channel, ) = $this->initChannel($this->queueName);
+    list($channel,) = $this->initChannel($this->queueName);
 
     $count = 10;
     for ($i = 1; $i <= $count; $i++) {

@@ -17,9 +17,6 @@ use Symfony\Component\Yaml\Yaml;
 
 /**
  * Implements hook_drush_command().
- *
- * @return array
- *   An array of Drush command definitions.
  */
 function rabbitmq_drush_command() {
   $file = preg_replace('/(inc|php)$/', 'yml', __FILE__);
@@ -32,6 +29,7 @@ function rabbitmq_drush_command() {
  * Command callback for rabbitmq-queue-info.
  *
  * @param string $queueName
+ *   The name of the requested queue.
  */
 function drush_rabbitmq_queue_info($queueName = NULL) {
   /** @var \Drupal\rabbitmq\Service\QueueInfo $info */
