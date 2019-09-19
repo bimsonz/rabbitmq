@@ -33,7 +33,7 @@ function rabbitmq_drush_command() {
  */
 function drush_rabbitmq_queue_info($queueName = NULL) {
   /** @var \Drupal\rabbitmq\Service\QueueInfo $info */
-  $info = \Drupal::service('rabbitmq.queue_info');
+  $info = (new Drupal())->service('rabbitmq.queue_info');
   $count = $info->count($queueName);
   echo (new Yaml())->dump([$queueName => $count]);
 }

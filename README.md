@@ -2,9 +2,8 @@ RabbitMQ Integration
 ====================
 
 [![Build Status](https://travis-ci.org/FGM/rabbitmq.svg?branch=travis)](https://travis-ci.org/FGM/rabbitmq)
-[![Code Coverage](https://scrutinizer-ci.com/g/FGM/rabbitmq/badges/coverage.png?b=travis)](https://scrutinizer-ci.com/g/FGM/rabbitmq/?branch=travis)
-[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/FGM/rabbitmq/badges/quality-score.png?b=travis)](https://scrutinizer-ci.com/g/FGM/rabbitmq/?branch=travis)
-
+[![Code Coverage](https://scrutinizer-ci.com/g/bimsonz/rabbitmq/badges/coverage.png?b=8.x-2.x)](https://scrutinizer-ci.com/g/bimsonz/rabbitmq/?branch=8.x-2.x)
+[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/bimsonz/rabbitmq/badges/quality-score.png?b=8.x-2.x)](https://scrutinizer-ci.com/g/bimsonz/rabbitmq/?branch=8.x-2.x)
 Requirements
 ------------
 
