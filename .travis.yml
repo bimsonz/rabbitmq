@@ -54,6 +54,8 @@ before_script:
   # Define RabbitMQ settings
   - tail --lines=+9 modules/contrib/rabbitmq/example.settings.local.php >> sites/default/settings.php
 
+  # Check Drupal install
+  - vendor/bin/drush status
   # enable RabbitMQ module in build site.
   - vendor/bin/drush -y en rabbitmq
 
