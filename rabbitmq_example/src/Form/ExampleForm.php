@@ -49,7 +49,7 @@ class ExampleForm extends FormBase {
     $queue_name = 'queue1';
     $queue_factory = \Drupal::service('queue');
     $queue = $queue_factory->get($queue_name);
-    $queue->createItem($data);
+    $queue->createItem([$data]);
 
     // Send some feedback.
     $this->messenger()->addMessage(

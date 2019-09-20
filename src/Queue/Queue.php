@@ -26,15 +26,27 @@ class Queue extends QueueBase implements ReliableQueueInterface {
    * {@inheritdoc}
    */
   public function createItem($data) {
-    $logger_args = [
+    $loggerArgs = [
       'channel' => static::LOGGER_CHANNEL,
       '%queue' => $this->name,
     ];
 
+    $messageArgs = ['delivery_mode' => 2];
+
+    if (!is_array($data)) {
+      $data = [$data, NULL];
+    }
+
+    list($itemData, $args) = $data;
+
+    if (is_array($args)) {
+      $messageArgs = array_merge($messageArgs, $args);
+    }
+
     try {
       $channel = $this->getChannel();
       // Data must be a string.
-      $item = new AMQPMessage(json_encode($data), ['delivery_mode' => 2]);
+      $item = new AMQPMessage(json_encode($itemData), $messageArgs);
 
       // Default exchange and routing keys.
       $exchange = '';
@@ -47,11 +59,11 @@ class Queue extends QueueBase implements ReliableQueueInterface {
       }
 
       $channel->basic_publish($item, $exchange, $routing_key);
-      $this->logger->debug('Item sent to queue %queue', $logger_args);
+      $this->logger->debug('Item sent to queue %queue', $loggerArgs);
       $result = TRUE;
     }
     catch (\Exception $e) {
-      $this->logger->error('Failed to send item to queue %queue: @message', $logger_args + [
+      $this->logger->error('Failed to send item to queue %queue: @message', $loggerArgs + [
         '@message' => $e->getMessage(),
       ]);
       $result = FALSE;

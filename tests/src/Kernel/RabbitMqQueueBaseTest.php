@@ -3,6 +3,10 @@
 namespace Drupal\Tests\rabbitmq\Kernel;
 
 use Drupal\rabbitmq\Queue\Queue;
+use PhpAmqpLib\Channel\AMQPChannel;
+use PhpAmqpLib\Connection\AMQPStreamConnection;
+use PhpAmqpLib\Message\AMQPMessage;
+use PhpAmqpLib\Wire\AMQPTable;
 
 /**
  * Class RabbitMqQueueTest.
@@ -59,6 +63,59 @@ class RabbitMqQueueBaseTest extends RabbitMqBaseTest {
     $expected = 0;
     $actual = $this->queue->numberOfItems();
     $this->assertEquals($expected, $actual, 'Queue no longer contains anything after deletion');
+  }
+
+  /**
+   * Test queue priority.
+   */
+  public function testQueuePriority() {
+
+    $config = $this->config('rabbitmq.config');
+    $queues = $config->get('queues');
+    $queues[$this->queueName] = [
+      'passive' => FALSE,
+      'durable' => TRUE,
+      'exclusive' => FALSE,
+      'auto_delete' => FALSE,
+      'nowait' => FALSE,
+      'routing_keys' => [],
+      'arguments' => ['x-max-priority' => ['I', 10]],
+    ];
+
+    $config->set('queues', $queues)->save();
+
+    $this->queue = $this->queueFactory->get($this->queueName);
+    $this->queue->createQueue();
+
+    $callback = function ($msg) {
+      echo " [x] Received ", $msg->body, "\n";
+    };
+
+    $channel = $this->connectionFactory->getConnection()->channel();
+    $channel->basic_consume(
+      $this->queueName,
+      '',
+      FALSE,
+      TRUE,
+      FALSE,
+      FALSE,
+      $callback,
+      NULL,
+      new AMQPTable(['x-max-priority' => 10])
+    );
+
+    while (count($channel->callbacks)) {
+      $channel->wait();
+    }
+
+    //$actual = $this->queue->numberOfItems();
+    //$expected = 1;
+    //$this->assertEquals($expected, $actual, 'Queue contains something before deletion');
+
+    //$this->queue->deleteQueue();
+   ///// $expected = 0;
+   // $actual = $this->queue->numberOfItems();
+   // $this->assertEquals($expected, $actual, 'Queue no longer contains anything after deletion');
   }
 
   /**
