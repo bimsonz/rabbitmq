@@ -60,7 +60,7 @@ Customization
 
 Modules may override queue or exchange defaults built in a custom module by 
 implementing `config/install/rabbitmq.config.yml`. See 
-`src/Queue/QueueBase.php` and `src/Tests/RabbitMqTestBase::setUp()` for details.
+`src/Queue/QueueBase.php` and `src/Tests/RabbitMqBaseTest::setUp()` for details.
 
 
 SSL
