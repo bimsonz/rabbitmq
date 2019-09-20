@@ -43,7 +43,7 @@ class Queue extends QueueBase implements ReliableQueueInterface {
       // Fetch exchange and routing key if defined,
       // only consider the first routing key for now.
       if (isset($this->options['routing_keys'][0])) {
-        list($exchange, $routingKey) = explode('.', $this->options['routing_keys'][0]);
+        list($exchange, $routingKey) = explode('.', $this->options['routing_keys'][0], 2);
       }
 
       $channel->basic_publish($item, $exchange, $routingKey);
