@@ -41,7 +41,7 @@ before_script:
   - mv ../$TRAVIS_REPO_SLUG modules/contrib
 
   # install Drush and PHP-AMQPlib in the project
-  - composer require -v "drush/drush:^8" "php-amqplib/php-amqplib:^2.7"
+  - composer require -v "drush/drush:^8" "php-amqplib/php-amqplib:^2.7" "drupal/coder"
   # Fix php unit for php 7.x
   - composer run-script drupal-phpunit-upgrade
 
