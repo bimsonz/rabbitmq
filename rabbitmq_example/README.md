@@ -1,16 +1,23 @@
 ## Example RabbitMQ module
 
-This module shows the integration of the rabbitmq module in a custom form.
+This module shows an example implementation of the integration between the RabbitMQ module and the form system.
 
-You need to add this to your `settings.php`
+### Install
+To enable RabbitMQ within the `ExampleForm` you need set the example queue to use the RabbitMQ queue factory service.
 
-    $settings['queue_service_queue1'] = 'queue.rabbitmq';
+Adding the following code to your `settings.php` file
 
-to make sure that `queue1` will use a rabbit message queue rather than the 
+    $settings['queue_service_rabbitmq_example_queue'] = 'queue.rabbitmq';
+
+will ensure that `rabbitmq_example_queue` uses a rabbit message queue rather than the 
 default database queue.
 
-Now, make sure RabbitMQ is running in the background and go to
+Check your RabbitMQ instance is running on the host you defined as part of the set up in the RabbitMQ module.
+
+Navigate to:
 
     /rabbitmq_example
 
-to submit an email address to the queue.
+and enter and email address into the form.
+
+Submitting will send your data to the `rabbitmq_example_queue` queue.
