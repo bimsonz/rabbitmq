@@ -65,7 +65,9 @@ before_script:
   # - drush runserver 127.0.0.1:8080 &
   #- until netstat -an 2>/dev/null | grep '8080.*LISTEN'; do true; done
 
-script: SIMPLETEST_DB=mysql://root:@127.0.0.1/travis_ci_rabbitmq vendor/bin/phpunit --coverage-clover modules/contrib/rabbitmq/coverage.clover --configuration core modules/contrib/rabbitmq
+script:
+  - vendor/bin/phpcs --standard=Drupal modules/contrib/rabbitmq
+  - SIMPLETEST_DB=mysql://root:@127.0.0.1/travis_ci_rabbitmq vendor/bin/phpunit --coverage-clover modules/contrib/rabbitmq/coverage.clover --configuration core modules/contrib/rabbitmq
 
 after_script:
   - cd modules/contrib/rabbitmq
