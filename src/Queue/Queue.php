@@ -40,14 +40,18 @@ class Queue extends QueueBase implements ReliableQueueInterface {
       $exchange = '';
       $routingKey = $this->name;
 
-      // Fetch exchange and routing key if defined,
-      // only consider the first routing key for now.
-      if (isset($this->options['routing_keys'][0])) {
-        list($exchange, $routingKey) = explode('.', $this->options['routing_keys'][0], 2);
+      if (isset($this->options['routing_keys']) && count($this->options['routing_keys']) >= 1) {
+        foreach ($this->options['routing_keys'] as $routingKey) {
+          list($exchange, $routingKey) = explode('.', $routingKey, 2);
+          $channel->basic_publish($item, $exchange, $routingKey);
+          $this->logger->debug('Item sent to queue %queue', $loggerArgs);
+        }
+      }
+      else {
+        $channel->basic_publish($item, $exchange, $routingKey);
+        $this->logger->debug('Item sent to queue %queue', $loggerArgs);
       }
 
-      $channel->basic_publish($item, $exchange, $routingKey);
-      $this->logger->debug('Item sent to queue %queue', $loggerArgs);
       $result = TRUE;
     }
     catch (\Exception $e) {
