@@ -31,10 +31,22 @@ class Queue extends QueueBase implements ReliableQueueInterface {
       '%queue' => $this->name,
     ];
 
+    $messageArgs = ['delivery_mode' => 2];
+
+    if (!is_array($data)) {
+      $data = [$data, NULL];
+    }
+
+    list($itemData, $args) = $data;
+
+    if (is_array($args)) {
+      $messageArgs = array_merge($messageArgs, $args);
+    }
+
     try {
       $channel = $this->getChannel();
       // Data must be a string.
-      $item = new AMQPMessage(json_encode($data), ['delivery_mode' => 2]);
+      $item = new AMQPMessage(json_encode($itemData), $messageArgs);
 
       // Default exchange and routing keys.
       $exchange = '';

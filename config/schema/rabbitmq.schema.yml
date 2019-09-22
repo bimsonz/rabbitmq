@@ -64,6 +64,11 @@ rabbitmq.queue:
       label: 'Routing keys'
       sequence:
         type: string
+    arguments:
+      type: sequence
+      label: 'Arguments'
+      sequence:
+        type: string
 
 rabbitmq.config.exchanges.*:
   type: rabbitmq.exchange
