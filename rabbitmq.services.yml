@@ -3,8 +3,6 @@ services:
     class: '\Drupal\rabbitmq\ConnectionFactory'
     arguments:
       - '@settings'
-      - '@logger.channel.rabbitmq'
-      - '@config.factory'
 
   # Name is defined by core usage, else it would be rabbitmq.queue.factory.
   queue.rabbitmq:
