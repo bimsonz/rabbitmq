@@ -10,7 +10,7 @@ use PhpAmqpLib\Connection\AMQPSSLConnection;
  * RabbitMQ connection factory class.
  */
 class ConnectionFactory {
-  const DEFAULT_CONNECTION_KEY = 'default';
+  const DEFAULT_CREDENTIALS_KEY = 'default';
   const DEFAULT_SERVER_ALIAS = 'localhost';
   const DEFAULT_HOST = self::DEFAULT_SERVER_ALIAS;
   const DEFAULT_PORT = 5672;
@@ -96,7 +96,7 @@ class ConnectionFactory {
     $credentials = $this->settings->get(self::CREDENTIALS, $defaultCredentials);
 
     if (!array_key_exists($this->credentialsKey, $credentials)) {
-      $this->credentialsKey = static::DEFAULT_CONNECTION_KEY;
+      $this->credentialsKey = static::DEFAULT_CREDENTIALS_KEY;
     }
 
     return $credentials[$this->credentialsKey];

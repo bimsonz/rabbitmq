@@ -21,14 +21,15 @@ class RabbitmqServiceProvider extends ServiceProviderBase {
     $credentials = Settings::get('rabbitmq_credentials');
     if (!empty($credentials)) {
       foreach ($credentials as $key => $values) {
+        $connectionFactoryServiceId = 'rabbitmq.connection.factory.' . $key;
         $connectionFactory = new Definition(ConnectionFactory::class, [
           new Reference('settings'),
           $key,
         ]);
-        $container->setDefinition('rabbitmq.connection.factory.' . $key, $connectionFactory);
+        $container->setDefinition($connectionFactoryServiceId, $connectionFactory);
 
         $queueFactory = new Definition(QueueFactory::class, [
-          new Reference('rabbitmq.connection.factory.' . $key),
+          new Reference($connectionFactoryServiceId),
           new Reference('module_handler'),
           new Reference('logger.channel.rabbitmq'),
           new Reference('config.factory'),
