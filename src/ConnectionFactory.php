@@ -54,7 +54,7 @@ class ConnectionFactory {
    */
   public function getConnection() {
     if (empty($this->connection)) {
-      $default_credentials = [
+      $defaultCredentials = [
         'host' => static::DEFAULT_SERVER_ALIAS,
         'port' => static::DEFAULT_PORT,
         'username' => static::DEFAULT_USER,
@@ -62,7 +62,7 @@ class ConnectionFactory {
         'vhost' => '/',
       ];
 
-      $credentials = Settings::get(self::CREDENTIALS, $default_credentials);
+      $credentials = Settings::get(self::CREDENTIALS, $defaultCredentials);
 
       if (!empty($credentials['ssl'])) {
         $connection = new AMQPSSLConnection(
@@ -76,12 +76,39 @@ class ConnectionFactory {
         );
       }
       else {
+        $defaultOptions = [
+          'insist' => FALSE,
+          'login_method' => 'AMQPLAIN',
+          'login_response' => NULL,
+          'locale' => 'en_US',
+          'connection_timeout' => 3.0,
+          'read_write_timeout' => 3.0,
+          'context' => NULL,
+          'keepalive' => FALSE,
+          'heartbeat' => 0,
+        ];
+
+        if (empty($credentials['options'])) {
+          $credentials['options'] = [];
+        }
+
+        $credentials['options'] = array_merge($defaultOptions, $credentials['options']);
+
         $connection = new AMQPStreamConnection(
           $credentials['host'],
           $credentials['port'],
           $credentials['username'],
           $credentials['password'],
-          $credentials['vhost']
+          $credentials['vhost'],
+          $credentials['options']['insist'],
+          $credentials['options']['login_method'],
+          $credentials['options']['login_response'],
+          $credentials['options']['locale'],
+          $credentials['options']['connection_timeout'],
+          $credentials['options']['read_write_timeout'],
+          $credentials['options']['context'],
+          $credentials['options']['keepalive'],
+          $credentials['options']['heartbeat']
         );
       }
       $this->connection = $connection;

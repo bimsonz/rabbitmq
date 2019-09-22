@@ -43,14 +43,14 @@ class QueueFactory {
    *
    * @var \Drupal\Core\Extension\ModuleHandlerInterface
    */
-  protected $modules;
+  protected $moduleHandler;
 
   /**
    * Constructor.
    *
    * @param \Drupal\rabbitmq\ConnectionFactory $connectionFactory
    *   The connection factory service.
-   * @param \Drupal\Core\Extension\ModuleHandlerInterface $modules
+   * @param \Drupal\Core\Extension\ModuleHandlerInterface $moduleHandler
    *   The module handler service.
    * @param \Psr\Log\LoggerInterface $logger
    *   The logger service for the RabbitMQ channel.
@@ -59,14 +59,14 @@ class QueueFactory {
    */
   public function __construct(
     ConnectionFactory $connectionFactory,
-    ModuleHandlerInterface $modules,
+    ModuleHandlerInterface $moduleHandler,
     LoggerInterface $logger,
     ConfigFactoryInterface $configFactory
   ) {
     $this->configFactory = $configFactory;
     $this->connectionFactory = $connectionFactory;
     $this->logger = $logger;
-    $this->modules = $modules;
+    $this->moduleHandler = $moduleHandler;
   }
 
   /**
@@ -80,7 +80,7 @@ class QueueFactory {
    */
   public function get($name) {
     $moduleConfig = $this->configFactory->get(static::MODULE_CONFIG);
-    $queue = new Queue($name, $this->connectionFactory, $this->modules, $this->logger, $moduleConfig);
+    $queue = new Queue($name, $this->connectionFactory, $this->moduleHandler, $this->logger, $moduleConfig);
     return $queue;
   }
 

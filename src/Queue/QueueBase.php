@@ -49,7 +49,7 @@ abstract class QueueBase {
    *
    * @var \Drupal\Core\Extension\ModuleHandlerInterface
    */
-  protected $modules;
+  protected $moduleHandler;
 
   /**
    * The name of the queue.
@@ -79,7 +79,7 @@ abstract class QueueBase {
    *   The name of the queue to work with: an arbitrary string.
    * @param \Drupal\rabbitmq\ConnectionFactory $connectionFactory
    *   The RabbitMQ connection factory.
-   * @param \Drupal\Core\Extension\ModuleHandlerInterface $modules
+   * @param \Drupal\Core\Extension\ModuleHandlerInterface $moduleHandler
    *   The module handler service.
    * @param \Psr\Log\LoggerInterface $logger
    *   The logger service.
@@ -89,34 +89,36 @@ abstract class QueueBase {
   public function __construct(
     string $name,
     ConnectionFactory $connectionFactory,
-    ModuleHandlerInterface $modules,
+    ModuleHandlerInterface $moduleHandler,
     LoggerInterface $logger,
     ImmutableConfig $moduleConfig
   ) {
+    $this->name = $name;
+    $this->connection = $connectionFactory->getConnection();
+    $this->moduleHandler = $moduleHandler;
+    $this->logger = $logger;
+
     // Check our active storage to find the the queue config.
     $queues = $moduleConfig->get('queues');
 
     $this->options = ['name' => $name];
+
     if (isset($queues[$name])) {
       $this->options += $queues[$name];
     }
 
-    $this->name = $name;
-    $this->connection = $connectionFactory->getConnection();
-    $this->logger = $logger;
-    $this->modules = $modules;
     // Declare any exchanges required if configured.
     $exchanges = $moduleConfig->get('exchanges');
     if ($exchanges) {
-      foreach ($exchanges as $exchangeName => $exchange) {
+      foreach ($exchanges as $exchangeName => $exchangeOptions) {
         $this->connection->channel()->exchange_declare(
           $exchangeName,
-          $exchange['type'] ?? 'direct',
-          $exchange['passive'] ?? FALSE,
-          $exchange['durable'] ?? TRUE,
-          $exchange['auto_delete'] ?? FALSE,
-          $exchange['internal'] ?? FALSE,
-          $exchange['nowait'] ?? FALSE
+          $exchangeOptions['type'] ?? 'direct',
+          $exchangeOptions['passive'] ?? FALSE,
+          $exchangeOptions['durable'] ?? TRUE,
+          $exchangeOptions['auto_delete'] ?? FALSE,
+          $exchangeOptions['internal'] ?? FALSE,
+          $exchangeOptions['nowait'] ?? FALSE
         );
       }
     }
@@ -129,7 +131,7 @@ abstract class QueueBase {
    *   The queue channel.
    */
   public function getChannel() {
-    if (!$this->channel) {
+    if (FALSE === isset($this->channel)) {
       $this->channel = $this->connection
         ->getConnection()
         ->channel();
@@ -146,7 +148,7 @@ abstract class QueueBase {
    *
    * @param \PhpAmqpLib\Channel\AMQPChannel $channel
    *   The queue channel.
-   * @param array $options
+   * @param array $optionsOverrides
    *   Options overriding the queue defaults.
    *
    * @return mixed|null
@@ -155,20 +157,20 @@ abstract class QueueBase {
    *   - Number of items
    *   - Number of clients
    */
-  protected function getQueue(AMQPChannel $channel, array $options = []) {
-    if (!isset($this->queue)) {
+  protected function getQueue(AMQPChannel $channel, array $optionsOverrides = []) {
+    if (FALSE === isset($this->queue)) {
       // Declare the queue.
-      $actualOptions = array_merge($this->options, $options);
+      $options = array_merge($this->options, $optionsOverrides);
       try {
         $this->queue = $channel->queue_declare(
           $this->name,
-          $actualOptions['passive'] ?? FALSE,
-          $actualOptions['durable'] ?? TRUE,
-          $actualOptions['exclusive'] ?? FALSE,
-          $actualOptions['auto_delete'] ?? TRUE,
-          $actualOptions['nowait'] ?? FALSE,
-          $actualOptions['arguments'] ?? NULL,
-          $actualOptions['ticket'] ?? NULL
+          $options['passive'] ?? FALSE,
+          $options['durable'] ?? TRUE,
+          $options['exclusive'] ?? FALSE,
+          $options['auto_delete'] ?? TRUE,
+          $options['nowait'] ?? FALSE,
+          $options['arguments'] ?? NULL,
+          $options['ticket'] ?? NULL
         );
       }
       catch (AMQPProtocolChannelException $e) {
@@ -176,10 +178,10 @@ abstract class QueueBase {
       }
 
       // Bind the queue to an exchange if defined.
-      if ($this->queue && !empty($actualOptions['routing_keys'])) {
-        foreach ($actualOptions['routing_keys'] as $routing_key) {
-          list($exchange) = explode('.', $routing_key);
-          $this->channel->queue_bind($this->name, $exchange, $routing_key);
+      if ($this->queue && !empty($options['routing_keys'])) {
+        foreach ($options['routing_keys'] as $routingKey) {
+          list($exchange) = explode('.', $routingKey, 2);
+          $this->channel->queue_bind($this->name, $exchange, $routingKey);
         }
       }
     }

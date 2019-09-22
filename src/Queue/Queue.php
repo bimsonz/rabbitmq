@@ -50,15 +50,15 @@ class Queue extends QueueBase implements ReliableQueueInterface {
 
       // Default exchange and routing keys.
       $exchange = '';
-      $routing_key = $this->name;
+      $routingKey = $this->name;
 
       // Fetch exchange and routing key if defined,
       // only consider the first routing key for now.
       if (isset($this->options['routing_keys'][0])) {
-        list($exchange, $routing_key) = explode('.', $this->options['routing_keys'][0]);
+        list($exchange, $routingKey) = explode('.', $this->options['routing_keys'][0], 2);
       }
 
-      $channel->basic_publish($item, $exchange, $routing_key);
+      $channel->basic_publish($item, $exchange, $routingKey);
       $this->logger->debug('Item sent to queue %queue', $loggerArgs);
       $result = TRUE;
     }
@@ -88,9 +88,9 @@ class Queue extends QueueBase implements ReliableQueueInterface {
    */
   public function numberOfItems() {
     // Retrieve information about the queue without modifying it.
-    $queue_options = ['passive' => TRUE];
+    $queueOptions = ['passive' => TRUE];
     $this->queue = NULL;
-    $queue = $this->getQueue($this->getChannel(), $queue_options);
+    $queue = $this->getQueue($this->getChannel(), $queueOptions);
     $jobs = $queue ? array_slice($queue, 1, 1) : [];
     return empty($jobs) ? 0 : $jobs[0];
   }

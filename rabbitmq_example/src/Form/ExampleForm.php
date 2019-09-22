@@ -46,15 +46,16 @@ class ExampleForm extends FormBase {
     $data = $form_state->getValue('email');
 
     // Get the queue config and send it to the data to the queue.
-    $queue_name = 'queue1';
-    $queue_factory = \Drupal::service('queue');
-    $queue = $queue_factory->get($queue_name);
-    $queue->createItem([$data]);
+    $queueName = 'rabbitmq_example_queue';
+    $queueFactory = \Drupal::service('queue');
+    /* @var \Drupal\rabbitmq\Queue\Queue $queue */
+    $queue = $queueFactory->get($queueName);
+    $queue->createItem($data);
 
     // Send some feedback.
     $this->messenger()->addMessage(
       $this->t('You sent the following data: @email to queue: @queue', [
-        '@queue' => $queue_name,
+        '@queue' => $queueName,
         '@email' => $form_state->getValue('email'),
       ])
     );
