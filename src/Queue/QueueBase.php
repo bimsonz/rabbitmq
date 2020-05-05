@@ -131,7 +131,7 @@ abstract class QueueBase {
    *   The queue channel.
    */
   public function getChannel() {
-    if (FALSE == isset($this->channel)) {
+    if (FALSE === isset($this->channel)) {
       $this->channel = $this->connection
         ->getConnection()
         ->channel();
@@ -158,7 +158,7 @@ abstract class QueueBase {
    *   - Number of clients
    */
   protected function getQueue(AMQPChannel $channel, array $optionsOverrides = []) {
-    if (FALSE == isset($this->queue)) {
+    if (FALSE === isset($this->queue)) {
       // Declare the queue.
       $options = array_merge($this->options, $optionsOverrides);
       try {
