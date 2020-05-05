@@ -36,7 +36,7 @@ Installation
         $settings['rabbitmq_credentials'] = [
           'host' => 'localhost',
           'port' => 5672,
-          'vhost' => '/'
+          'vhost' => '/',
           'username' => 'guest',
           'password' => 'guest',
         ];

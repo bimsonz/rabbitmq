@@ -16,7 +16,7 @@ Check your RabbitMQ instance is running on the host you defined as part of the s
 
 Navigate to:
 
-    /rabbitmq_example
+    /admin/config/development/rabbitmq_example
 
 and enter and email address into the form.
 

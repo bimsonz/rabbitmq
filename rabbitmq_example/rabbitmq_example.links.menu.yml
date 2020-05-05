@@ -1,0 +1,6 @@
+rabbitmq_example.example_form:
+  title: RabbitMQ Example Form
+  description: Example Form to test RabbitMQ settings.
+  route_name: rabbitmq_example.example_form
+  parent: system.admin_config_development
+  weight: 100

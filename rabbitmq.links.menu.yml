@@ -1,0 +1,5 @@
+rabbitmq.properties:
+  title: RabbitMQ properties
+  description: Show RabbitMQ properties.
+  route_name: rabbitmq.properties
+  parent: system.admin_reports
