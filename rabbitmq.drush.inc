@@ -28,7 +28,7 @@ function rabbitmq_drush_command() {
 /**
  * Command callback for rabbitmq-queue-info.
  *
- * @param string $queueName
+ * @param string|null $queueName
  *   The name of the requested queue.
  */
 function drush_rabbitmq_queue_info($queueName = NULL) {

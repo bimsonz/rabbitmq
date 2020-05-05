@@ -89,7 +89,7 @@ class RabbitmqCommands extends DrushCommands {
   /**
    * Return information about a queue.
    *
-   * @param string $queueName
+   * @param string|null $queueName
    *   The name of the queue to get information from.
    *
    * @return \Consolidation\OutputFormatters\StructuredData\PropertyList|null
@@ -102,7 +102,7 @@ class RabbitmqCommands extends DrushCommands {
    *   count: Items count
    */
   public function queueInfo($queueName = NULL) {
-    if (NULL == $queueName) {
+    if (NULL === $queueName) {
       $this->yell('Queue name required.', NULL, 'red');
       return NULL;
     }

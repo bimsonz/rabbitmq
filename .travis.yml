@@ -41,7 +41,7 @@ before_script:
   - mv ../$TRAVIS_REPO_SLUG modules/contrib
 
   # install Drush and PHP-AMQPlib in the project
-  - composer require -v "drush/drush:^8" "php-amqplib/php-amqplib:^2.7"
+  - composer require -v "drush/drush:^8" "php-amqplib/php-amqplib:^2.7" "drupal/coder" "dealerdirect/phpcodesniffer-composer-installer"
   # Fix php unit for php 7.x
   - composer run-script drupal-phpunit-upgrade
 
@@ -65,7 +65,9 @@ before_script:
   # - drush runserver 127.0.0.1:8080 &
   #- until netstat -an 2>/dev/null | grep '8080.*LISTEN'; do true; done
 
-script: SIMPLETEST_DB=mysql://root:@127.0.0.1/travis_ci_rabbitmq vendor/bin/phpunit --coverage-clover modules/contrib/rabbitmq/coverage.clover --configuration core modules/contrib/rabbitmq
+script:
+  - vendor/bin/phpcs --standard=Drupal --config-set ignore_warnings_on_exit 1 modules/contrib/rabbitmq
+  - SIMPLETEST_DB=mysql://root:@127.0.0.1/travis_ci_rabbitmq vendor/bin/phpunit --coverage-clover modules/contrib/rabbitmq/coverage.clover --configuration core modules/contrib/rabbitmq
 
 after_script:
   - cd modules/contrib/rabbitmq
