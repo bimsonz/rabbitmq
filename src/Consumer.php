@@ -194,7 +194,6 @@ class Consumer {
    * to shutdown the queue.
    */
   public function onTimeout() {
-    $this->messenger()->addMessage($this->t('Timeout reached'));
     $this->logger->info('Timeout reached');
     $this->stopListening();
   }
