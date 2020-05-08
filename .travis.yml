@@ -1,0 +1,75 @@
+language: php
+sudo: false
+
+cache:
+  directories:
+    - $HOME/.composer/cache/files
+    - ./bin/.phpunit
+
+matrix:
+  fast_finish: true
+  include:
+    - php: 7.2
+
+services:
+  - rabbitmq
+  - mysql
+
+addons:
+  apt:
+    packages:
+      - rabbitmq-server
+
+mysql:
+  database: travis_ci_rabbitmq
+  username: root
+  encoding: utf8
+
+before_script:
+  # Code runs in /home/travis/build, which is the checkout root.
+
+  # remove Xdebug as we don't need it, is slows everything, and it causes
+  # PHP Fatal error:  Maximum function nesting level of '256' reached
+  #- phpenv config-rm xdebug.ini
+  # navigate out of module directory to prevent blown stack by recursive module lookup
+  - cd ../..
+
+  # download Drupal 8.7.7 core.
+  - wget -q -O - http://ftp.drupal.org/files/projects/drupal-8.7.7.tar.gz | tar xz
+  - cd drupal-8.7.7
+  - mkdir -p modules/contrib
+  - mv ../$TRAVIS_REPO_SLUG modules/contrib
+
+  # install Drush and PHP-AMQPlib in the project
+  - composer require -v "drush/drush:^8" "php-amqplib/php-amqplib:^2.7" "drupal/coder" "dealerdirect/phpcodesniffer-composer-installer"
+  # Fix php unit for php 7.x
+  - composer run-script drupal-phpunit-upgrade
+
+  # create new site, stubbing sendmail path with true to prevent delivery errors and manually resolving drush path
+  - mysql -e 'create database travis_ci_rabbitmq'
+  - php -d sendmail_path=`which true` vendor/bin/drush -y qd --profile=testing --no-server --db-url=mysql://root:@127.0.0.1/travis_ci_rabbitmq
+  - chmod 755 sites/default
+  - chmod 644 sites/default/settings.php
+
+  # Define RabbitMQ settings
+  - tail --lines=+9 modules/contrib/rabbitmq/example.settings.local.php >> sites/default/settings.php
+  # Switch back to Drush 9 to enable the module (new core_version_requirement: key not supported in Drush 8)
+  - composer require drush/drush
+  # Check Drupal install
+  - vendor/bin/drush status
+  # enable RabbitMQ module in build site.
+  - vendor/bin/drush -y en rabbitmq
+
+  # Not needed: we don't have any web tests at this point.
+  # start a web server on port 8080, run in the background; wait for initialization.
+  # - drush runserver 127.0.0.1:8080 &
+  #- until netstat -an 2>/dev/null | grep '8080.*LISTEN'; do true; done
+
+script:
+  - vendor/bin/phpcs --standard=Drupal --config-set ignore_warnings_on_exit 1 modules/contrib/rabbitmq
+  - SIMPLETEST_DB=mysql://root:@127.0.0.1/travis_ci_rabbitmq vendor/bin/phpunit --coverage-clover modules/contrib/rabbitmq/coverage.clover --configuration core modules/contrib/rabbitmq
+
+after_script:
+  - cd modules/contrib/rabbitmq
+  - wget https://scrutinizer-ci.com/ocular.phar
+  - php ocular.phar code-coverage:upload --format=php-clover coverage.clover

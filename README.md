@@ -1,29 +1,36 @@
 RabbitMQ Integration
 ====================
 
-[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/FGM/rabbitmq/badges/quality-score.png?b=8.x-1.x)](https://scrutinizer-ci.com/g/FGM/rabbitmq/?branch=8.x-1.x)
-
+[![Build Status](https://travis-ci.org/FGM/rabbitmq.svg?branch=travis)](https://travis-ci.org/FGM/rabbitmq)
+[![Code Coverage](https://scrutinizer-ci.com/g/bimsonz/rabbitmq/badges/coverage.png?b=8.x-2.x)](https://scrutinizer-ci.com/g/bimsonz/rabbitmq/?branch=8.x-2.x)
+[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/bimsonz/rabbitmq/badges/quality-score.png?b=8.x-2.x)](https://scrutinizer-ci.com/g/bimsonz/rabbitmq/?branch=8.x-2.x)
 Requirements
 ------------
 
 * RabbitMQ server needs to be installed and configured.
-* Drupal 8.0.0-RC4 or more recent must be configured with `php-amqplib`  
+* Drupal 8.4.0 or more recent must be configured with `php-amqplib`  
     * go to the root directory of your site
     * edit `composer.json` (not `core/composer.json`)
-    * insert `"videlalvaro/php-amqplib": "^2.6"` in the `require` section of 
-      the file, then save it.
+    * insert `"php-amqplib/php-amqplib": "^2.7"` in the `require` section of 
+      the file.
+    * Optional, but recommended: insert `"ext-pcntl": "*"` in the `require` 
+      section of the file. Ensure your PHP actually includes that standard
+      extension. Without it, the timeout mechanism for the consumer service will
+      not be available.
+    * Save it.
     * update your `vendor` directory by typing `composer update`.
-
+    
 
 Installation
 ------------
 
 * Provide connection credentials as part of the `$settings` global variable in 
-  `settings.php`.
+  `settings.local.php` (see the `example.settings.local.php` provided)
 
-        $settings['rabbitmq_credentials'] = [
+        $settings['rabbitmq_credentials']['default'] = [
           'host' => 'localhost',
           'port' => 5672,
+          'vhost' => '/',
           'username' => 'guest',
           'password' => 'guest',
         ];
@@ -34,15 +41,45 @@ Installation
     * If you want to set RabbitMQ as the default queue manager, then add the 
       following to your settings.
 
-          $settings['queue_default'] = 'queue.rabbitmq';
+          $settings['queue_default'] = 'queue.rabbitmq.default';
     * Alternatively you can also set for each queue to use RabbitMQ using one 
       of these formats:
 
-          $settings['queue_service_{queue_name}'] = 'queue.rabbitmq';
-          $settings['queue_reliable_service_{queue_name}'] = 'queue.rabbitmq';
+          $settings['queue_service_{queue_name}'] = 'queue.rabbitmq.default';
+          $settings['queue_reliable_service_{queue_name}'] = 'queue.rabbitmq.default';
+
 
 Customization
 -------------
 
-Modules may override queue defaults built in the module by implementing
-`hook_rabbitmq_queue_info()`. See `rabbitmq.api.php` for details.
+Modules may override queue or exchange defaults built in a custom module by 
+implementing `config/install/rabbitmq.config.yml`. See 
+`src/Queue/QueueBase.php` and `src/Tests/RabbitMqBaseTest::setUp()` for details.
+
+
+SSL
+-------
+
+It is similar to the normal connection array, but you need to add 2 extra array 
+keys.
+
+This is an example of how `settings.php` should look like:
+
+```
+$settings['rabbitmq_credentials']['default'] = [
+  'host' => 'host',
+  'port' => 5672,
+  'vhost' => '/',
+  'username' => 'guest',
+  'password' => 'guest',
+  'ssl' => [
+    'verify_peer_name' => false,
+    'verify_peer' => false,
+    'local_pk' => '~/.ssh/id_rsa',
+  ],
+  'options' => [
+    'connection_timeout' => 20,
+    'read_write_timeout' => 20,
+  ],
+];
+```

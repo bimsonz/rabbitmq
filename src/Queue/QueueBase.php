@@ -1,22 +1,27 @@
 <?php
 
-/**
- * @file
- * Contains RabbitMQ QueueBase.
- */
-
 namespace Drupal\rabbitmq\Queue;
 
+use Drupal\Core\Config\ImmutableConfig;
 use Drupal\Core\Extension\ModuleHandlerInterface;
-use Drupal\rabbitmq\Connection;
+use Drupal\rabbitmq\ConnectionFactory;
 use PhpAmqpLib\Channel\AMQPChannel;
+use PhpAmqpLib\Exception\AMQPProtocolChannelException;
 use Psr\Log\LoggerInterface;
 
 /**
- * Class QueueBase.
+ * Low-level Queue API implementation for RabbitMQ on top of AMQPlib.
+ *
+ * This class contains the low-level properties and methods not exposed by
+ * the Queue API ReliableQueueInterface: those are implemented in Queue.php.
+ *
+ * @see \Drupal\rabbitmq\Queue\Queue
  */
 abstract class QueueBase {
+
   const LOGGER_CHANNEL = 'rabbitmq';
+
+  const MODULE = 'rabbitmq';
 
   /**
    * Object that holds a channel to RabbitMQ.
@@ -28,7 +33,7 @@ abstract class QueueBase {
   /**
    * The RabbitMQ connection service.
    *
-   * @var \Drupal\rabbitmq\Connection
+   * @var \PhpAmqpLib\Connection\AbstractConnection
    */
   protected $connection;
 
@@ -44,32 +49,79 @@ abstract class QueueBase {
    *
    * @var \Drupal\Core\Extension\ModuleHandlerInterface
    */
-  protected $modules;
+  protected $moduleHandler;
 
   /**
    * The name of the queue.
+   *
+   * @var string
    */
   protected $name;
+
+  /**
+   * The queue options.
+   *
+   * @var array
+   */
+  protected $options;
+
+  /**
+   * A queue array: [writer, item count, consumer count].
+   *
+   * @var array|null
+   */
+  protected $queue;
 
   /**
    * Constructor.
    *
    * @param string $name
    *   The name of the queue to work with: an arbitrary string.
-   * @param \Drupal\rabbitmq\Connection $connection
-   *   The RabbitMQ connection service.
-   * @param \Drupal\Core\Extension\ModuleHandlerInterface $modules
+   * @param \Drupal\rabbitmq\ConnectionFactory $connectionFactory
+   *   The RabbitMQ connection factory.
+   * @param \Drupal\Core\Extension\ModuleHandlerInterface $moduleHandler
    *   The module handler service.
    * @param \Psr\Log\LoggerInterface $logger
    *   The logger service.
+   * @param \Drupal\Core\Config\ImmutableConfig $moduleConfig
+   *   The config.factory service.
    */
-  public function __construct($name, Connection $connection,
-    ModuleHandlerInterface $modules, LoggerInterface $logger) {
+  public function __construct(
+    string $name,
+    ConnectionFactory $connectionFactory,
+    ModuleHandlerInterface $moduleHandler,
+    LoggerInterface $logger,
+    ImmutableConfig $moduleConfig
+  ) {
     $this->name = $name;
-
-    $this->connection = $connection;
+    $this->connection = $connectionFactory->getConnection();
+    $this->moduleHandler = $moduleHandler;
     $this->logger = $logger;
-    $this->modules = $modules;
+
+    // Check our active storage to find the the queue config.
+    $queues = $moduleConfig->get('queues');
+
+    $this->options = ['name' => $name];
+
+    if (isset($queues[$name])) {
+      $this->options += $queues[$name];
+    }
+
+    // Declare any exchanges required if configured.
+    $exchanges = $moduleConfig->get('exchanges');
+    if ($exchanges) {
+      foreach ($exchanges as $exchangeName => $exchangeOptions) {
+        $this->connection->channel()->exchange_declare(
+          $exchangeName,
+          $exchangeOptions['type'] ?? 'direct',
+          $exchangeOptions['passive'] ?? FALSE,
+          $exchangeOptions['durable'] ?? TRUE,
+          $exchangeOptions['auto_delete'] ?? FALSE,
+          $exchangeOptions['internal'] ?? FALSE,
+          $exchangeOptions['nowait'] ?? FALSE
+        );
+      }
+    }
   }
 
   /**
@@ -79,14 +131,15 @@ abstract class QueueBase {
    *   The queue channel.
    */
   public function getChannel() {
-    if ($this->channel) {
-      return $this->channel;
+    if (FALSE === isset($this->channel)) {
+      $this->channel = $this->connection
+        ->getConnection()
+        ->channel();
+
+      // Initialize a queue on the channel.
+      $this->getQueue($this->channel);
     }
 
-    $this->channel = $this->connection->getConnection()->channel();
-
-    // Initialize a queue on the channel.
-    $this->getQueue($this->channel);
     return $this->channel;
   }
 
@@ -95,39 +148,57 @@ abstract class QueueBase {
    *
    * @param \PhpAmqpLib\Channel\AMQPChannel $channel
    *   The queue channel.
-   * @param array $options
+   * @param array $optionsOverrides
    *   Options overriding the queue defaults.
    *
    * @return mixed|null
-   *   Not strongly specified by php-amqplib.
+   *   Not strongly specified by php-amqplib. Expected to be a 3-item array:
+   *   - ProtocolWriter
+   *   - Number of items
+   *   - Number of clients
    */
-  protected function getQueue(AMQPChannel $channel, array $options = []) {
-    $queue_options = [
-      'passive' => FALSE,
-      // Whether the queue is persistent or not. A durable queue is slower but
-      // can survive if RabbitMQ fails.
-      'durable' => TRUE,
-      'exclusive' => FALSE,
-      'auto_delete' => FALSE,
-      'nowait' => 'FALSE',
-      'arguments' => NULL,
-      'ticket' => NULL,
-    ];
+  protected function getQueue(AMQPChannel $channel, array $optionsOverrides = []) {
+    if (FALSE === isset($this->queue)) {
+      // Declare the queue.
+      $options = array_merge($this->options, $optionsOverrides);
+      try {
+        $this->queue = $channel->queue_declare(
+          $this->name,
+          $options['passive'] ?? FALSE,
+          $options['durable'] ?? TRUE,
+          $options['exclusive'] ?? FALSE,
+          $options['auto_delete'] ?? TRUE,
+          $options['nowait'] ?? FALSE,
+          $options['arguments'] ?? NULL,
+          $options['ticket'] ?? NULL
+        );
+      }
+      catch (AMQPProtocolChannelException $e) {
+        return NULL;
+      }
 
-    $queue_info = $this->modules->invokeAll('rabbitmq_queue_info');
-
-    // Allow modules to override queue settings.
-    if (isset($queue_info[$this->name])) {
-      $queue_options += $queue_info[$this->name];
+      // Bind the queue to an exchange if defined.
+      if ($this->queue && !empty($options['routing_keys'])) {
+        foreach ($options['routing_keys'] as $routingKey) {
+          list($exchange) = explode('.', $routingKey, 2);
+          $this->channel->queue_bind($this->name, $exchange, $routingKey);
+        }
+      }
     }
 
-    $queue_options += $options;
-    // The name option cannot be overridden.
-    $queue_options['name'] = $this->name;
+    return $this->queue;
+  }
 
-    return $channel->queue_declare($this->name,
-      $queue_options['passive'], $queue_options['durable'],
-      $queue_options['exclusive'], $queue_options['auto_delete']);
+  /**
+   * Shutdown.
+   */
+  public function shutdown() {
+    if ($this->channel) {
+      $this->channel->close();
+    }
+    if ($this->connection) {
+      $this->connection->close();
+    }
   }
 
 }
