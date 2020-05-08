@@ -3,7 +3,7 @@ type: module
 hidden: TRUE
 description: 'RabbitMQ Integration for Drupal.'
 core: 8.x
-core_version_requirement: ^8
+core_version_requirement: ^8 || ^9
 package: Testing
 php: 7.0
 
