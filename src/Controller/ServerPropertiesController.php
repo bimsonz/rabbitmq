@@ -26,7 +26,7 @@ class ServerPropertiesController {
   public function build() {
     try {
       /** @var \Drupal\rabbitmq\Queue\Queue $backend */
-      $backend = \Drupal::queue('queue.rabbitmq');
+      $backend = \Drupal::queue('queue.rabbitmq.default');
     }
     catch (\ErrorException $e) {
       $build = [
@@ -34,7 +34,7 @@ class ServerPropertiesController {
           ':url' => Url::fromRoute('system.status')->toString(),
         ]),
       ];
-      if (Settings::get('queue_default') == 'queue.rabbitmq') {
+      if (Settings::get('queue_default') == 'queue.rabbitmq.default') {
         QueueFactory::overrideSettings();
       }
       return $build;
@@ -46,7 +46,7 @@ class ServerPropertiesController {
           ':url' => Url::fromRoute('system.status')->toString(),
         ]),
       ];
-      if (Settings::get('queue_default') == 'queue.rabbitmq') {
+      if (Settings::get('queue_default') == 'queue.rabbitmq.default') {
         QueueFactory::overrideSettings();
       }
       return $build;

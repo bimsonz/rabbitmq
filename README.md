@@ -19,21 +19,15 @@ Requirements
       not be available.
     * Save it.
     * update your `vendor` directory by typing `composer update`.
-
-
-Example module
---------------
-
-To test RabbitMQ from your Drupal site, enable the `rabbitmq_example` module and 
-follow the instructions from the README.
+    
 
 Installation
 ------------
 
 * Provide connection credentials as part of the `$settings` global variable in 
-  `settings.php`.
+  `settings.local.php` (see the `example.settings.local.php` provided)
 
-        $settings['rabbitmq_credentials'] = [
+        $settings['rabbitmq_credentials']['default'] = [
           'host' => 'localhost',
           'port' => 5672,
           'vhost' => '/',
@@ -47,12 +41,12 @@ Installation
     * If you want to set RabbitMQ as the default queue manager, then add the 
       following to your settings.
 
-          $settings['queue_default'] = 'queue.rabbitmq';
+          $settings['queue_default'] = 'queue.rabbitmq.default';
     * Alternatively you can also set for each queue to use RabbitMQ using one 
       of these formats:
 
-          $settings['queue_service_{queue_name}'] = 'queue.rabbitmq';
-          $settings['queue_reliable_service_{queue_name}'] = 'queue.rabbitmq';
+          $settings['queue_service_{queue_name}'] = 'queue.rabbitmq.default';
+          $settings['queue_reliable_service_{queue_name}'] = 'queue.rabbitmq.default';
 
 
 Customization
@@ -72,7 +66,7 @@ keys.
 This is an example of how `settings.php` should look like:
 
 ```
-$settings['rabbitmq_credentials'] = [
+$settings['rabbitmq_credentials']['default'] = [
   'host' => 'host',
   'port' => 5672,
   'vhost' => '/',

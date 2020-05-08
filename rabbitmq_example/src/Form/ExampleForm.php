@@ -47,7 +47,7 @@ class ExampleForm extends FormBase {
 
     // Get the queue config and send it to the data to the queue.
     $queueName = 'rabbitmq_example_queue';
-    $queueFactory = \Drupal::service('queue');
+    $queueFactory = \Drupal::service('queue.rabbitmq.default');
     /* @var \Drupal\rabbitmq\Queue\Queue $queue */
     $queue = $queueFactory->get($queueName);
     $queue->createItem($data);

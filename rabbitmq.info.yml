@@ -1,6 +1,7 @@
 name: RabbitMQ
 type: module
 description: 'RabbitMQ Integration for Drupal.'
-core_version_requirement: ^8.7.7
+core: 8.x
+core_version_requirement: ^8
 package: 'Performance and scalability'
 php: 7.0

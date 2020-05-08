@@ -27,7 +27,7 @@ $settings['rabbitmq_credentials']['default'] = [
   ],
 ];
 
-$settings['queue_default'] = 'queue.rabbitmq';
+$settings['queue_default'] = 'queue.rabbitmq.default';
 
 /**
  * Define a secondary connection by following the example below.
@@ -51,9 +51,9 @@ $settings['queue_default'] = 'queue.rabbitmq';
  *
  * The above code will define an alias as follows.
  * @code
- * $settings['queue_service_{queue_name}'] = 'queue.rabbitmq.qa';
+ * $settings['queue_service_qa'] = 'queue.rabbitmq.qa';
  * @endcode
  *
- * Queues that use the default `queue.rabbitmq` service will use
+ * Queues that use the default `queue.rabbitmq.default` service will use
  * the default connection.
 */

@@ -1,4 +1,4 @@
-# Schema for the configuration files of the RabbitMQ module.
+ # Schema for the configuration files of the RabbitMQ module.
 
 rabbitmq.config:
   type: config_object
